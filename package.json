@@ -1,17 +1,21 @@
 {
-  "name": "yueby.tools.ncm-lyrics",
+  "name": "yueby.tools.ncmlyrics",
   "displayName": "◆ NcmLyrics",
-  "version": "0.0.1",
-  "description": "Describe this Package",
-  "gitDependencies": {},
-  "vpmDependencies": {},
+  "version": "1.0.0",
+  "description": "A tool for getting lyrics from Netease Cloud Music.",
   "author": {
-    "name": "yueby",
-    "email": "yueby_sp@qq.com",
-    "url": "https://github.com/Yueby"
+    "name": "Yueby",
+    "email": "yueby_sp@qq.com"
   },
-  "legacyFolders": {},
-  "legacyFiles": {},
-  "localPath": "E:\\Github\\NcmLyric\\Packages\\yueby.tools.ncm-lyric",
-  "unity": "2022.3"
+  "keywords": [
+    "yueby",
+    "tool",
+    "ncm-lyrics",
+    "lyrics",
+    "yueby tools"
+  ],
+  "unity": "2022.3",
+  "vpmDependencies": {
+  },
+  "unityRelease": "22f1"
 }
