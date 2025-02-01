@@ -8,6 +8,9 @@
 
 - 通过接受 [LyricsToPort](https://github.com/Yueby/LyricsToPort) 发送的消息，将歌词显示到自定义编辑器窗口中
 - 在Tools/YuebyTools/NcmLyrics打开窗口
+- 支持歌词翻译和罗马音显示
+- 平滑的歌词滚动动画
+- Scene视图歌词显示支持
 
 ### 歌词滚动功能
 

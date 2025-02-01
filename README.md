@@ -8,6 +8,9 @@ A NetEase Cloud Music lyrics display plugin (Unity-side)
 
 - Display lyrics in a custom editor window by receiving messages from [LyricsToPort](https://github.com/Yueby/LyricsToPort)
 - Open window from Tools/YuebyTools/NcmLyrics
+- Support lyrics translation and romaji display
+- Smooth lyrics scrolling animation
+- Scene view lyrics display support
 
 ### Lyrics Scrolling
 
