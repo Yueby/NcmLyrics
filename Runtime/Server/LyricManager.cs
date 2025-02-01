@@ -4,11 +4,11 @@ using System.Threading.Tasks;
 using Yueby.NcmLyrics.Models;
 using Yueby.NcmLyrics.Messages;
 
-namespace Yueby.NcmLyrics.Client
+namespace Yueby.NcmLyrics.Server
 {
     public class LyricManager : IDisposable
     {
-        private LyricClient _client;
+        private LyricServer _server;
         private bool _isInitialized;
         private int _port;
 
@@ -17,7 +17,7 @@ namespace Yueby.NcmLyrics.Client
         public LyricData CurrentLyric { get; private set; }
         public ProgressData CurrentProgress { get; private set; }
         public PlayStateData CurrentPlayState { get; private set; }
-        public bool IsConnected => _client?.IsRunning ?? false;
+        public bool IsConnected => _server?.IsRunning ?? false;
         public int Port => _port;
 
         // 事件
@@ -37,6 +37,17 @@ namespace Yueby.NcmLyrics.Client
         private Action<ProgressData> _onProgressUpdated;
         private Action<PlayStateData> _onPlayStateChanged;
 
+        private long _currentTime; // 当前时间（毫秒）
+        private float _lastUpdateTime; // 最后更新时间
+        private const float UPDATE_INTERVAL = 0.016f; // 更新间隔
+        private float _playbackSpeed = 1.0f; // 播放速度
+
+        public float PlaybackSpeed
+        {
+            get => _playbackSpeed;
+            set => _playbackSpeed = Mathf.Clamp(value, 0.1f, 2.0f);
+        }
+
         public void Initialize(int port = 35010)
         {
             _port = port;
@@ -55,10 +66,10 @@ namespace Yueby.NcmLyrics.Client
                 // 等待一小段时间确保端口被释放
                 System.Threading.Thread.Sleep(100);
 
-                _client = new LyricClient(_port);
+                _server = new LyricServer(_port);
                 CreateEventHandlers();
                 RegisterEvents();
-                _ = _client.StartAsync();
+                _ = _server.StartAsync();
                 _isInitialized = true;
             }
             catch (Exception ex)
@@ -106,6 +117,7 @@ namespace Yueby.NcmLyrics.Client
                 CurrentLyric = null;
                 CurrentProgress = null;
                 CurrentPlayState = null;
+                ResetProgress(); // 重置进度
                 OnSongChanged?.Invoke(song);
             };
 
@@ -120,6 +132,8 @@ namespace Yueby.NcmLyrics.Client
             {
                 if (!_isInitialized) return;
                 CurrentProgress = progress;
+                _currentTime = progress.time;
+                _lastUpdateTime = Time.realtimeSinceStartup;
                 OnProgressUpdated?.Invoke(progress);
             };
 
@@ -133,38 +147,38 @@ namespace Yueby.NcmLyrics.Client
 
         private void RegisterEvents()
         {
-            if (_client == null) return;
+            if (_server == null) return;
 
-            _client.OnServerStarted += _onServerStarted;
-            _client.OnServerStopped += _onServerStopped;
-            _client.OnError += _onError;
-            _client.OnSongChanged += _onSongChanged;
-            _client.OnLyricReceived += _onLyricReceived;
-            _client.OnProgressUpdated += _onProgressUpdated;
-            _client.OnPlayStateChanged += _onPlayStateChanged;
+            _server.OnServerStarted += _onServerStarted;
+            _server.OnServerStopped += _onServerStopped;
+            _server.OnError += _onError;
+            _server.OnSongChanged += _onSongChanged;
+            _server.OnLyricReceived += _onLyricReceived;
+            _server.OnProgressUpdated += _onProgressUpdated;
+            _server.OnPlayStateChanged += _onPlayStateChanged;
         }
 
         private void UnregisterEvents()
         {
-            if (_client == null) return;
+            if (_server == null) return;
 
-            _client.OnServerStarted -= _onServerStarted;
-            _client.OnServerStopped -= _onServerStopped;
-            _client.OnError -= _onError;
-            _client.OnSongChanged -= _onSongChanged;
-            _client.OnLyricReceived -= _onLyricReceived;
-            _client.OnProgressUpdated -= _onProgressUpdated;
-            _client.OnPlayStateChanged -= _onPlayStateChanged;
+            _server.OnServerStarted -= _onServerStarted;
+            _server.OnServerStopped -= _onServerStopped;
+            _server.OnError -= _onError;
+            _server.OnSongChanged -= _onSongChanged;
+            _server.OnLyricReceived -= _onLyricReceived;
+            _server.OnProgressUpdated -= _onProgressUpdated;
+            _server.OnPlayStateChanged -= _onPlayStateChanged;
         }
 
         public void Dispose()
         {
-            if (_client != null)
+            if (_server != null)
             {
                 try
                 {
                     UnregisterEvents();
-                    _client.Dispose();
+                    _server.Dispose();
                 }
                 catch (Exception ex)
                 {
@@ -172,7 +186,7 @@ namespace Yueby.NcmLyrics.Client
                 }
                 finally
                 {
-                    _client = null;
+                    _server = null;
                 }
             }
             _isInitialized = false;
@@ -220,6 +234,39 @@ namespace Yueby.NcmLyrics.Client
         {
             if (CurrentProgress == null) return 0f;
             return CurrentProgress.time / (float)CurrentProgress.duration;
+        }
+
+        public void Update(float deltaTime)
+        {
+            if (CurrentPlayState?.IsPlaying != true) return;
+
+            // 计算新的进度（先转换为double避免精度问题）
+            double timeIncrement = deltaTime * 1000.0 * _playbackSpeed;
+            long newTime = _currentTime + (long)timeIncrement;
+            
+            // 如果有当前进度，检查是否需要同步
+            if (CurrentProgress != null)
+            {
+                long timeDiff = Math.Abs(newTime - CurrentProgress.time);
+                if (timeDiff > 1000) // 如果差距大于1秒，直接同步
+                {
+                    newTime = CurrentProgress.time;
+                }
+            }
+
+            _currentTime = newTime;
+            _lastUpdateTime = Time.realtimeSinceStartup;
+        }
+
+        public long GetCurrentTime()
+        {
+            return _currentTime;
+        }
+
+        private void ResetProgress()
+        {
+            _currentTime = 0;
+            _lastUpdateTime = Time.realtimeSinceStartup;
         }
     }
 } 

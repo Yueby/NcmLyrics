@@ -7,9 +7,9 @@ using System.Net;
 using System.IO;
 using Newtonsoft.Json;
 
-namespace Yueby.NcmLyrics.Client
+namespace Yueby.NcmLyrics.Server
 {
-    public class LyricClient : IDisposable
+    public class LyricServer : IDisposable
     {
         private readonly HttpListener _httpListener;
         private readonly object _lock = new object();
@@ -25,7 +25,7 @@ namespace Yueby.NcmLyrics.Client
         public event Action OnServerStarted;
         public event Action OnServerStopped;
 
-        public LyricClient(int port = 35010)
+        public LyricServer(int port = 35010)
         {
             Port = port;
             _httpListener = new HttpListener();
@@ -43,7 +43,7 @@ namespace Yueby.NcmLyrics.Client
                     _httpListener.Start();
                     IsRunning = true;
                     OnServerStarted?.Invoke();
-                    Debug.Log("[NcmLyrics] Server started");
+                    // Debug.Log("[NcmLyrics] Server started");
                 }
                 catch (Exception ex)
                 {
@@ -162,7 +162,7 @@ namespace Yueby.NcmLyrics.Client
                     {
                         _httpListener.Stop();
                         OnServerStopped?.Invoke();
-                        Debug.Log("[NcmLyrics] Server stopped");
+                        // Debug.Log("[NcmLyrics] Server stopped");
                     }
                 }
                 catch (Exception ex)

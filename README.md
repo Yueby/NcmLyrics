@@ -1,20 +1,26 @@
 # NcmLyrics
 
-一个网易云音乐歌词显示插件（Unity侧）
+A NetEase Cloud Music lyrics display plugin (Unity-side)
 
-### 功能介绍
+[English](README.md) | [中文](README_CN.md)
 
-- 通过接受 https://github.com/Yueby/LyricsToPort 发送的消息，将歌词显示到自定义编辑器窗口中
-- 在Tools/YuebyTools/NcmLyrics打开窗口
+### Features
 
-### 歌词滚动功能
+- Display lyrics in a custom editor window by receiving messages from [LyricsToPort](https://github.com/Yueby/LyricsToPort)
+- Open window from Tools/YuebyTools/NcmLyrics
+
+### Lyrics Scrolling
 
 ![image](https://Yueby.github.io/picx-images-hosting/lyric-scroll-demo.92q8h0n2fy.gif)
 
-### 歌词翻译、罗马音显示
+### Translation and Romaji Display
 
 ![image](https://Yueby.github.io/picx-images-hosting/translation-romaji-demo.7lk3f9ixpk.gif)
 
-### 切歌演示
+### Song Switching Demo
 
 ![image](https://Yueby.github.io/picx-images-hosting/change-song-demo.32i2cadgrf.gif)
+
+### Scene View Display
+
+![image](https://Yueby.github.io/picx-images-hosting/mirrortool-sceneview.39laj0z3an.gif)
