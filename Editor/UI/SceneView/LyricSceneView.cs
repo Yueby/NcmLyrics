@@ -48,7 +48,7 @@ namespace Yueby.NcmLyrics.Editor.Windows
             {
                 currentItem = LyricLineItem.Create(new LyricLine
                 {
-                    originalLyric = "Loading..."
+                    originalLyric = "Waiting..."
                 });
             }
 
@@ -132,7 +132,12 @@ namespace Yueby.NcmLyrics.Editor.Windows
 
         public static void Enable()
         {
-            LyricConfig.Instance.SceneViewEnabled = true;
+            if (!LyricService.IsRunning)
+            {
+                Debug.LogWarning("[NcmLyrics] Cannot enable Scene View display: Service is not running");
+                return;
+            }
+
             if (lyricRenderer == null)
             {
                 lyricRenderer = LyricService.GetRenderer();
@@ -143,7 +148,6 @@ namespace Yueby.NcmLyrics.Editor.Windows
 
         public static void Disable()
         {
-            LyricConfig.Instance.SceneViewEnabled = false;
             UnregisterEvents();
             lyricRenderer = null;
             SceneView.RepaintAll();

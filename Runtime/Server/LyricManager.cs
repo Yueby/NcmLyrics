@@ -240,22 +240,21 @@ namespace Yueby.NcmLyrics.Server
         {
             if (CurrentPlayState?.IsPlaying != true) return;
 
-            // 计算新的进度（先转换为double避免精度问题）
+            // 计算新的进度（使用double避免精度问题）
             double timeIncrement = deltaTime * 1000.0 * _playbackSpeed;
-            long newTime = _currentTime + (long)timeIncrement;
-            
-            // 如果有当前进度，检查是否需要同步
-            if (CurrentProgress != null)
-            {
-                long timeDiff = Math.Abs(newTime - CurrentProgress.time);
-                if (timeDiff > 1000) // 如果差距大于1秒，直接同步
-                {
-                    newTime = CurrentProgress.time;
-                }
-            }
-
-            _currentTime = newTime;
+            _currentTime += (long)timeIncrement;
             _lastUpdateTime = Time.realtimeSinceStartup;
+        }
+
+        public void OnProgressReceived(ProgressData progress)
+        {
+            if (progress == null) return;
+
+            // 直接更新进度
+            _currentTime = progress.time;
+            _lastUpdateTime = Time.realtimeSinceStartup;
+            CurrentProgress = progress;
+            OnProgressUpdated?.Invoke(progress);
         }
 
         public long GetCurrentTime()

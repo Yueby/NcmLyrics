@@ -63,7 +63,7 @@ namespace Yueby.NcmLyrics.Editor.Windows
 
             if (IsWaiting)
             {
-                OriginalTextWidth = LyricStyles.Text.Waiting.CalcSize(new GUIContent("Waiting for song...")).x;
+                OriginalTextWidth = LyricStyles.Text.Waiting.CalcSize(new GUIContent("Waiting...")).x;
                 TranslationWidth = 0;
                 RomajiWidth = 0;
                 return;
@@ -72,7 +72,7 @@ namespace Yueby.NcmLyrics.Editor.Windows
             // 计算原文宽度
             if (Line.dynamicLyric != null && Line.dynamicLyric.Length > 0)
             {
-                OriginalTextWidth = CalcDynamicLyricWidth(_contentWidth);
+                OriginalTextWidth = CalcDynamicLyricWidth(_contentWidth, noWrap);
             }
             else
             {
@@ -99,7 +99,7 @@ namespace Yueby.NcmLyrics.Editor.Windows
                 : 0;
         }
 
-        private float CalcDynamicLyricWidth(float contentWidth)
+        private float CalcDynamicLyricWidth(float contentWidth, bool noWrap = false)
         {
             if (Line.dynamicLyric == null || Line.dynamicLyric.Length == 0)
                 return 0;
@@ -116,19 +116,27 @@ namespace Yueby.NcmLyrics.Editor.Windows
                 var size = GetCachedWordSize(word.word, dynamicStyle);
                 float wordWidth = size.x * maxScale; // 使用最大缩放比例计算宽度
 
-                // 如果这个词加上去会超出宽度，就换行
-                if (lineWidth + wordWidth > contentWidth)
+                if (noWrap)
                 {
-                    totalWidth = Mathf.Max(totalWidth, lineWidth);
-                    lineWidth = wordWidth;
+                    // 不换行时直接累加宽度
+                    totalWidth += wordWidth;
                 }
                 else
                 {
-                    lineWidth += wordWidth;
+                    // 需要换行时的逻辑
+                    if (lineWidth + wordWidth > contentWidth)
+                    {
+                        totalWidth = Mathf.Max(totalWidth, lineWidth);
+                        lineWidth = wordWidth;
+                    }
+                    else
+                    {
+                        lineWidth += wordWidth;
+                    }
                 }
             }
 
-            return Mathf.Max(totalWidth, lineWidth);
+            return noWrap ? totalWidth : Mathf.Max(totalWidth, lineWidth);
         }
 
         private float CalcDynamicLyricHeight(float width)

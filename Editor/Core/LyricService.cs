@@ -7,7 +7,6 @@ using Yueby.NcmLyrics.Editor.Data;
 
 namespace Yueby.NcmLyrics.Editor.Windows
 {
-    [InitializeOnLoad]
     public class LyricService
     {
         private static LyricManager _lyricManager;
@@ -19,7 +18,7 @@ namespace Yueby.NcmLyrics.Editor.Windows
         private static LyricRenderer _renderer;
         
         // Service status
-        public static bool IsInitialized { get; private set; }
+        public static bool IsRunning { get; private set; }
         public static SongInfo CurrentSong => _lyricManager?.CurrentSong;
         public static LyricData CurrentLyric => _lyricManager?.CurrentLyric;
         public static ProgressData CurrentProgress => _lyricManager?.CurrentProgress;
@@ -42,11 +41,34 @@ namespace Yueby.NcmLyrics.Editor.Windows
         // 统一的Update事件
         public static event Action<float> OnUpdateTick;
 
-        static LyricService()
+        public static bool StartService()
         {
-            Initialize();
-            EditorApplication.quitting += OnEditorQuitting;
-            EditorApplication.update += OnUpdate;
+            if (!IsRunning)
+            {
+                try
+                {
+                    Initialize();
+                    EditorApplication.update += OnUpdate;
+                    Debug.Log("[NcmLyrics] Service started successfully on port " + Port);
+                    return IsRunning;
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[NcmLyrics] Failed to start service: {ex.Message}");
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public static void StopService()
+        {
+            if (IsRunning)
+            {
+                EditorApplication.update -= OnUpdate;
+                Dispose();
+                Debug.Log("[NcmLyrics] Service stopped");
+            }
         }
 
         public static LyricRenderer GetRenderer()
@@ -107,7 +129,7 @@ namespace Yueby.NcmLyrics.Editor.Windows
 
         private static void Initialize()
         {
-            if (IsInitialized) return;
+            if (IsRunning) return;
 
             try
             {
@@ -116,13 +138,13 @@ namespace Yueby.NcmLyrics.Editor.Windows
                 
                 _lyricManager.Initialize(LyricConfig.Instance.Port);
                 
-                IsInitialized = true;
-                Debug.Log("[NcmLyrics] Lyric service started");
+                IsRunning = true;
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[NcmLyrics] Failed to initialize lyric service: {ex.Message}");
+                Debug.LogError($"[NcmLyrics] Failed to initialize service: {ex.Message}");
                 Dispose();
+                throw;
             }
         }
 
@@ -133,29 +155,29 @@ namespace Yueby.NcmLyrics.Editor.Windows
             _lyricManager.OnConnected += () => 
             {
                 _isReconnecting = false;
+                Debug.Log("[NcmLyrics] Connected to client");
                 OnConnected?.Invoke();
             };
             _lyricManager.OnDisconnected += () => 
             {
+                Debug.Log("[NcmLyrics] Client disconnected, attempting to reconnect...");
                 OnDisconnected?.Invoke();
                 TryReconnect();
             };
-            _lyricManager.OnError += error => OnError?.Invoke(error);
+            _lyricManager.OnError += error => 
+            {
+                Debug.LogError($"[NcmLyrics] {error}");
+                OnError?.Invoke(error);
+            };
             _lyricManager.OnSongChanged += song => OnSongChanged?.Invoke(song);
             _lyricManager.OnLyricReceived += lyric => OnLyricReceived?.Invoke(lyric);
             _lyricManager.OnProgressUpdated += progress => OnProgressUpdated?.Invoke(progress);
             _lyricManager.OnPlayStateChanged += state => OnPlayStateChanged?.Invoke(state);
         }
 
-        private static void OnEditorQuitting()
-        {
-            EditorApplication.update -= OnUpdate;
-            Dispose();
-        }
-
         private static void OnUpdate()
         {
-            if (!IsInitialized) return;
+            if (!IsRunning) return;
 
             float currentTime = Time.realtimeSinceStartup;
             _deltaTime = _lastUpdateTime > 0 ? currentTime - _lastUpdateTime : 0;
@@ -187,13 +209,12 @@ namespace Yueby.NcmLyrics.Editor.Windows
             {
                 _isReconnecting = true;
                 _lastReconnectTime = Time.realtimeSinceStartup;
-                Debug.Log("[NcmLyrics] Connection lost, attempting to reconnect...");
             }
         }
 
         public static void UpdatePort(int port)
         {
-            if (!IsInitialized || port == Port) return;
+            if (!IsRunning || port == Port) return;
 
             LyricConfig.Instance.Port = port;
             _lyricManager?.UpdatePort(port);
@@ -227,7 +248,7 @@ namespace Yueby.NcmLyrics.Editor.Windows
                 _lyricManager.Dispose();
                 _lyricManager = null;
             }
-            IsInitialized = false;
+            IsRunning = false;
             _isReconnecting = false;
             _lastUpdateTime = 0;
             OnUpdateTick = null;

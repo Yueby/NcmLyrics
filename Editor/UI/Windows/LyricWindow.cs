@@ -17,6 +17,12 @@ namespace Yueby.NcmLyrics.Editor.Windows
 
         internal static void ShowWindow()
         {
+            if (!LyricService.IsRunning)
+            {
+                Debug.LogWarning("[NcmLyrics] Cannot open Lyric Window: Service is not running");
+                return;
+            }
+
             Instance = GetWindow<LyricWindow>();
             Instance.minSize = new Vector2(300, 400);
             Instance.titleContent = new GUIContent("LyricWindow");

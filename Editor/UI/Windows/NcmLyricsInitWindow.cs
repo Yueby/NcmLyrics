@@ -6,8 +6,6 @@ namespace Yueby.NcmLyrics.Editor.Windows
 {
     public class NcmLyricsInitWindow : EditorWindow
     {
-        private bool showWindowButton;
-
         // 静态样式
         private static GUIStyle boxStyle;
         private static GUIStyle buttonStyle;
@@ -20,15 +18,19 @@ namespace Yueby.NcmLyrics.Editor.Windows
         public static void ShowWindow()
         {
             var window = GetWindow<NcmLyricsInitWindow>("Lyric Editor Settings");
-            window.minSize = new Vector2(250, 290);
+            window.minSize = new Vector2(340, 300);
         }
 
-
-
-        private void UpdateButtonStates()
+        private void OnEnable()
         {
-            bool hasWindowInstance = LyricWindow.Instance != null;
-            showWindowButton = !hasWindowInstance;
+            // 检查服务器状态，如果没有运行则关闭歌词窗口
+            if (!LyricService.IsRunning)
+            {
+                if (LyricWindow.Instance != null)
+                {
+                    CloseLyricWindow();
+                }
+            }
         }
 
         private void InitStylesIfNeeded()
@@ -84,6 +86,49 @@ namespace Yueby.NcmLyrics.Editor.Windows
             // 主要内容区域
             using (new EditorGUILayout.VerticalScope(boxStyle))
             {
+                // 服务器状态和控制
+                EditorGUILayout.LabelField("Server Status", sectionTitleStyle);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUI.color = LyricService.IsRunning ? new Color(0.4f, 0.8f, 0.4f) : new Color(0.7f, 0.7f, 0.7f);
+                    EditorGUILayout.LabelField($"Server: {(LyricService.IsRunning ? "Running" : "Stopped")}", statusStyle);
+                    GUI.color = Color.white;
+
+                    if (LyricService.IsRunning)
+                    {
+                        if (GUILayout.Button("Stop Server", buttonStyle))
+                        {
+                            CloseLyricWindow();
+                            if (LyricSceneView.IsEnabled)
+                            {
+                                LyricSceneView.Disable();
+                            }
+                            LyricService.StopService();
+                        }
+                    }
+                    else
+                    {
+                        if (GUILayout.Button("Start Server", buttonStyle))
+                        {
+                            if (!LyricService.StartService())
+                            {
+                                EditorUtility.DisplayDialog("Error", 
+                                    "Failed to start lyric service. Please check the console for details.", "OK");
+                            }
+                            else
+                            {
+                                // 服务启动成功，检查Scene View状态
+                                if (LyricSceneView.IsEnabled)
+                                {
+                                    OpenLyricSceneView();
+                                }
+                            }
+                        }
+                    }
+                }
+
+                EditorGUILayout.Space(5);
+
                 // 端口设置
                 EditorGUILayout.LabelField("Connection Settings", sectionTitleStyle);
                 using (new EditorGUILayout.HorizontalScope())
@@ -104,68 +149,57 @@ namespace Yueby.NcmLyrics.Editor.Windows
 
                 // 显示设置
                 EditorGUILayout.LabelField("Display Settings", sectionTitleStyle);
-                bool showTranslation = EditorGUILayout.Toggle("Show Translation", LyricConfig.Instance.ShowTranslation, toggleStyle);
-                if (showTranslation != LyricConfig.Instance.ShowTranslation)
-                    LyricConfig.Instance.ShowTranslation = showTranslation;
-
-                bool showRomaji = EditorGUILayout.Toggle("Show Romaji", LyricConfig.Instance.ShowRomaji, toggleStyle);
-                if (showRomaji != LyricConfig.Instance.ShowRomaji)
-                    LyricConfig.Instance.ShowRomaji = showRomaji;
-
-                bool showSongInfo = EditorGUILayout.Toggle("Show Song Info", LyricConfig.Instance.ShowSongInfo, toggleStyle);
-                if (showSongInfo != LyricConfig.Instance.ShowSongInfo)
-                    LyricConfig.Instance.ShowSongInfo = showSongInfo;
-
-                bool autoScroll = EditorGUILayout.Toggle("Auto Scroll", LyricConfig.Instance.AutoScroll, toggleStyle);
-                if (autoScroll != LyricConfig.Instance.AutoScroll)
-                    LyricConfig.Instance.AutoScroll = autoScroll;
-
-                EditorGUILayout.Space(5);
-
-                // 状态显示
-                EditorGUILayout.LabelField("Window Status", sectionTitleStyle);
-                bool hasWindowInstance = LyricWindow.Instance != null;
-                bool hasSceneViewInstance = LyricSceneView.IsEnabled;
-
-                GUI.color = hasWindowInstance ? new Color(0.4f, 0.8f, 0.4f) : new Color(0.7f, 0.7f, 0.7f);
-                EditorGUILayout.LabelField("Window Mode: " + (hasWindowInstance ? "Running" : "Not Running"), statusStyle);
-
-                GUI.color = Color.white;
-
-                EditorGUILayout.Space(5);
-
-                // Scene视图Toggle
-                bool newSceneViewEnabled = EditorGUILayout.Toggle("Show in Scene View", LyricSceneView.IsEnabled, toggleStyle);
-                if (newSceneViewEnabled != LyricSceneView.IsEnabled)
+                using (new EditorGUI.DisabledScope(!LyricService.IsRunning))
                 {
-                    if (newSceneViewEnabled)
+                    bool showTranslation = EditorGUILayout.Toggle("Show Translation", LyricConfig.Instance.ShowTranslation, toggleStyle);
+                    if (showTranslation != LyricConfig.Instance.ShowTranslation)
+                        LyricConfig.Instance.ShowTranslation = showTranslation;
+
+                    bool showRomaji = EditorGUILayout.Toggle("Show Romaji", LyricConfig.Instance.ShowRomaji, toggleStyle);
+                    if (showRomaji != LyricConfig.Instance.ShowRomaji)
+                        LyricConfig.Instance.ShowRomaji = showRomaji;
+
+                    bool showSongInfo = EditorGUILayout.Toggle("Show Song Info", LyricConfig.Instance.ShowSongInfo, toggleStyle);
+                    if (showSongInfo != LyricConfig.Instance.ShowSongInfo)
+                        LyricConfig.Instance.ShowSongInfo = showSongInfo;
+
+                    bool autoScroll = EditorGUILayout.Toggle("Auto Scroll", LyricConfig.Instance.AutoScroll, toggleStyle);
+                    if (autoScroll != LyricConfig.Instance.AutoScroll)
+                        LyricConfig.Instance.AutoScroll = autoScroll;
+
+                    EditorGUILayout.Space(5);
+
+                    // Scene视图Toggle
+                    bool newSceneViewEnabled = EditorGUILayout.Toggle("Show in Scene View", LyricConfig.Instance.SceneViewEnabled, toggleStyle);
+                    if (newSceneViewEnabled != LyricConfig.Instance.SceneViewEnabled)
                     {
-                        OpenLyricSceneView();
+                        LyricConfig.Instance.SceneViewEnabled = newSceneViewEnabled;
+                        if (newSceneViewEnabled)
+                        {
+                            OpenLyricSceneView();
+                        }
+                        else
+                        {
+                            CloseLyricSceneView();
+                        }
+                    }
+
+                    EditorGUILayout.Space(5);
+
+                    // 主窗口按钮
+                    if (LyricWindow.Instance == null)
+                    {
+                        if (GUILayout.Button("Open Lyric Window", buttonStyle))
+                        {
+                            OpenLyricWindow();
+                        }
                     }
                     else
                     {
-                        CloseLyricSceneView();
-                    }
-                }
-
-                EditorGUILayout.Space(5);
-
-                UpdateButtonStates();
-                // 主窗口按钮
-                if (showWindowButton)
-                {
-                    if (GUILayout.Button("Open Lyric Window", buttonStyle))
-                    {
-                        OpenLyricWindow();
-                        UpdateButtonStates();
-                    }
-                }
-                else
-                {
-                    if (GUILayout.Button("Close Lyric Window", buttonStyle))
-                    {
-                        CloseLyricWindow();
-                        UpdateButtonStates();
+                        if (GUILayout.Button("Close Lyric Window", buttonStyle))
+                        {
+                            CloseLyricWindow();
+                        }
                     }
                 }
             }

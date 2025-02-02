@@ -150,7 +150,7 @@ namespace Yueby.NcmLyrics.Editor.Windows
                     if (Mathf.Abs(newScrollY - currentScrollY) > 0.01f)
                     {
                         currentScrollY = newScrollY;
-                        scrollPosition.y = currentScrollY;
+                scrollPosition.y = currentScrollY;
                         needsRepaint = true;
                     }
                 }
@@ -422,8 +422,8 @@ namespace Yueby.NcmLyrics.Editor.Windows
             RecalculateHeights(rect.width);
             viewHeight = rect.height;
 
-            var hoverStyle = !LyricConfig.Instance.AutoScroll ? GUI.skin.verticalScrollbar : GUIStyle.none;
-            scrollPosition = GUI.BeginScrollView(rect, scrollPosition, new Rect(0, 0, rect.width - 20, cachedTotalHeight), false, false, GUIStyle.none, hoverStyle);
+                var hoverStyle = !LyricConfig.Instance.AutoScroll ? GUI.skin.verticalScrollbar : GUIStyle.none;
+                scrollPosition = GUI.BeginScrollView(rect, scrollPosition, new Rect(0, 0, rect.width - 20, cachedTotalHeight), false, false, GUIStyle.none, hoverStyle);
 
             float y = 0;
             int currentLineIndex = GetCurrentLineIndex();
@@ -455,7 +455,7 @@ namespace Yueby.NcmLyrics.Editor.Windows
                 }
             }
 
-            GUI.EndScrollView();
+                GUI.EndScrollView();
         }
 
         public void Dispose()
